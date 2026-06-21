@@ -16,6 +16,7 @@ const boardings = [
   {
     id: 1,
     name: "Greenwood Female Residence",
+    location: "Colombo Campus Zone",
     price: 15000,
     distance: 1.2,
     girlsOnly: true,
@@ -31,6 +32,7 @@ const boardings = [
   {
     id: 2,
     name: "Tech Hub Dorms",
+    location: "Engineering College",
     price: 12000,
     distance: 0.5,
     girlsOnly: false,
@@ -46,6 +48,7 @@ const boardings = [
   {
     id: 3,
     name: "Serenity Stay (Girls)",
+    location: "University West Gate",
     price: 18000,
     distance: 2.0,
     girlsOnly: true,
@@ -100,6 +103,11 @@ app.post('/api/login', (req, res) => {
   } else {
     res.status(401).json({ success: false, message: "Invalid email or password" });
   }
+});
+
+// Fallback route for SPA support
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 // Start Server

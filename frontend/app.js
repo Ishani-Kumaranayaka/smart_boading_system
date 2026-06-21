@@ -7,10 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const distanceDisplay = document.getElementById('distance-display');
     const girlsOnlyCheckbox = document.getElementById('girls-only');
     const applyFiltersBtn = document.getElementById('apply-filters');
+    const searchInput = document.querySelector('.search-input input');
+    const searchBtn = document.querySelector('.search-btn');
+    const facilityTags = document.querySelectorAll('.tag');
     
     const listViewBtn = document.getElementById('list-view-btn');
     const mapViewBtn = document.getElementById('map-view-btn');
     const mapContainer = document.getElementById('map-container');
+    const payRentBtn = document.getElementById('pay-rent-btn');
+    const sosBtn = document.getElementById('sos-btn');
     
     const modal = document.getElementById('booking-modal');
     const closeModal = document.querySelector('.close-modal');
@@ -30,12 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardSection = document.getElementById('dashboard');
 
     let currentBoardingId = null;
+    let isLoggedIn = false;
+    let currentBoardings = [];
 
     // Fetch and render boardings
     const fetchBoardings = async () => {
         try {
             boardingsContainer.innerHTML = '<div class="loading-spinner"></div>';
-            
+
             const params = new URLSearchParams({
                 maxPrice: priceRange.value,
                 maxDistance: distanceRange.value,
@@ -44,12 +51,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const response = await fetch(`/api/boardings?${params}`);
             const data = await response.json();
-            
-            renderBoardings(data);
+
+            currentBoardings = data;
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            const activeFacilities = Array.from(facilityTags)
+                .filter(tag => tag.classList.contains('active'))
+                .map(tag => tag.textContent.trim());
+
+            let filtered = currentBoardings;
+
+            if (searchTerm) {
+                filtered = filtered.filter(boarding =>
+                    boarding.name.toLowerCase().includes(searchTerm) ||
+                    (boarding.location && boarding.location.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (activeFacilities.length > 0) {
+                filtered = filtered.filter(boarding =>
+                    activeFacilities.every(facility => boarding.facilities.includes(facility))
+                );
+            }
+
+            renderBoardings(filtered);
+            renderMap(filtered);
         } catch (error) {
             console.error('Error fetching boardings:', error);
             boardingsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Failed to load boardings. Is the backend running?</p>';
         }
+    };
+
+    const renderMap = (boardings) => {
+        mapContainer.innerHTML = '';
+
+        if (!boardings.length) {
+            mapContainer.innerHTML = '<div class="glass-card" style="padding: 30px; text-align:center;"><p>No locations match your filters.</p></div>';
+            return;
+        }
+
+        const mapOverview = document.createElement('div');
+        mapOverview.className = 'mock-map';
+        mapOverview.innerHTML = `
+            <p>Boarding locations near your campus</p>
+            <i class="fa-solid fa-map-location-dot map-icon"></i>
+            <p class="map-subtext">Tap any location on the list to request a booking.</p>
+        `;
+
+        const list = document.createElement('div');
+        list.style.display = 'grid';
+        list.style.gap = '10px';
+        list.style.marginTop = '20px';
+
+        boardings.slice(0, 5).forEach(boarding => {
+            const item = document.createElement('div');
+            item.className = 'glass-card';
+            item.style.padding = '15px';
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.style.alignItems = 'center';
+            item.innerHTML = `
+                <div>
+                    <strong>${boarding.name}</strong>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">${boarding.distance} km • Rs.${boarding.price.toLocaleString()}</div>
+                </div>
+                <button class="btn secondary-btn" type="button">View</button>
+            `;
+            item.querySelector('button').addEventListener('click', () => window.openBookingModal(boarding.id, boarding.name));
+            list.appendChild(item);
+        });
+
+        mapContainer.appendChild(mapOverview);
+        mapContainer.appendChild(list);
     };
 
     const renderBoardings = (boardings) => {
@@ -118,6 +190,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     applyFiltersBtn.addEventListener('click', fetchBoardings);
+    searchBtn.addEventListener('click', fetchBoardings);
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            fetchBoardings();
+        }
+    });
+
+    facilityTags.forEach(tag => {
+        tag.addEventListener('click', () => {
+            tag.classList.toggle('active');
+            fetchBoardings();
+        });
+    });
+
+    payRentBtn?.addEventListener('click', () => {
+        alert('Rent payment flow coming soon. Redirecting to secure payment gateway...');
+    });
+
+    sosBtn?.addEventListener('click', () => {
+        alert('Calling emergency support at 011-234-5678. Stay safe!');
+    });
 
     // View toggles
     listViewBtn.addEventListener('click', () => {
@@ -265,13 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-    });
-
-    // Facility Tag toggling
-    document.querySelectorAll('.tag').forEach(tag => {
-        tag.addEventListener('click', () => {
-            tag.classList.toggle('active');
-        });
     });
 
     // Initial fetch

@@ -35,7 +35,7 @@
                         <i class="fa-solid fa-location-dot"></i>
                         <input type="text" placeholder="Enter University or City...">
                     </div>
-                    <button class="btn search-btn">Search</button>
+                    <button type="button" class="btn search-btn">Search</button>
                 </div>
                 
                 <div class="ai-recommendation glass-card">
@@ -89,8 +89,8 @@
             <!-- Boardings List & Map -->
             <section class="results-section">
                 <div class="view-toggle">
-                    <button class="view-btn active" id="list-view-btn"><i class="fa-solid fa-list"></i> List View</button>
-                    <button class="view-btn" id="map-view-btn"><i class="fa-solid fa-map"></i> Map View</button>
+                    <button type="button" class="view-btn active" id="list-view-btn"><i class="fa-solid fa-list"></i> List View</button>
+                    <button type="button" class="view-btn" id="map-view-btn"><i class="fa-solid fa-map"></i> Map View</button>
                 </div>
 
                 <div class="boardings-grid" id="boardings-container">
@@ -118,14 +118,10 @@
                     <p>Next Due Date: <strong>Oct 5, 2026</strong></p>
                     <p>Amount: <strong>Rs. 18,000</strong></p>
                 </div>
-                <button class="btn primary-btn pay-btn">Pay Rent Now</button>
-            </div>
-            
-            <h2 class="section-title mt-4">Emergency Contacts</h2>
-            <div class="glass-card emergency-card">
-                <p>Campus Security: <strong>011-234-5678</strong></p>
-                <p>Local Police: <strong>119</strong></p>
-                <button class="btn danger-btn"><i class="fa-solid fa-phone-volume"></i> SOS Emergency</button>
+                <div class="payment-actions">
+                    <button id="pay-rent-btn" class="btn primary-btn pay-btn" type="button">Pay Rent Now</button>
+                    <button id="sos-btn" class="btn danger-btn" type="button"><i class="fa-solid fa-phone-volume"></i> SOS Emergency</button>
+                </div>
             </div>
         </section>
 

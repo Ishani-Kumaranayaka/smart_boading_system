@@ -1,0 +1,11 @@
+{
+  "name": "designher",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "start": "node backend/server.js"
+  }
+}

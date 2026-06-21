@@ -110,7 +110,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Start Server
+/* Start Server
 app.listen(PORT, () => {
   console.log(`CampusStay server running on http://localhost:${PORT}`);
-});
+});*/
+// ✅ මේක අලුතෙන් දාන්න
+module.exports = app;

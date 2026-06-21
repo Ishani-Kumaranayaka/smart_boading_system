@@ -4,12 +4,13 @@ const path = require('path');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+
+// 1. Frontend ෆෝල්ඩරය static ලෙස පෙන්වීමට Express වලට සැකසීම (Vercel එකට ගැලපෙන සේ process.cwd() යොදා ඇත)
+app.use(express.static(path.join(process.cwd(), 'frontend')));
 
 // Mock Data
 const boardings = [
@@ -41,7 +42,7 @@ const boardings = [
     safetyScore: 8.2,
     rating: 4.2,
     reviews: 85,
-    image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-15555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80",
     lat: 6.9281,
     lng: 79.8622
   },
@@ -105,14 +106,10 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Fallback route for SPA support
+// 2. වෙනත් ඕනෑම Route එකකදී Frontend එකේ index.html එක Load කිරීම
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  res.sendFile(path.join(process.cwd(), 'frontend', 'index.html'));
 });
 
-/* Start Server
-app.listen(PORT, () => {
-  console.log(`CampusStay server running on http://localhost:${PORT}`);
-});*/
-// ✅ මේක අලුතෙන් දාන්න
+// ✅ Vercel එකට අත්‍යවශ්‍ය Export එක (app.listen එකක් අවශ්‍ය නැත)
 module.exports = app;

@@ -12,6 +12,42 @@ app.use(bodyParser.json());
 // 1. Frontend ෆෝල්ඩරය static ලෙස පෙන්වීමට Express වලට සැකසීම (Vercel එකට ගැලපෙන සේ process.cwd() යොදා ඇත)
 app.use(express.static(path.join(process.cwd(), 'frontend')));
 
+// Database connection (optional). When available we will use Sequelize models.
+let db = null;
+try {
+  db = require('./db');
+  // attempt to sync and seed in background (non-blocking)
+  (async () => {
+    try {
+      await db.sequelize.authenticate();
+      await db.sequelize.sync();
+      // seed defaults if empty
+      const count = await db.Boarding.count();
+      if (count === 0) {
+        await db.Boarding.bulkCreate(boardings.map(b => ({
+          name: b.name,
+          location: b.location,
+          price: b.price,
+          distance: b.distance,
+          girlsOnly: b.girlsOnly,
+          facilities: b.facilities,
+          verified: b.verified,
+          safetyScore: b.safetyScore,
+          rating: b.rating,
+          reviews: b.reviews,
+          image: b.image,
+          lat: b.lat,
+          lng: b.lng
+        })));
+      }
+    } catch (e) {
+      console.warn('DB sync/seed failed:', e.message || e);
+    }
+  })();
+} catch (e) {
+  // db not configured; continue with in-memory mock data
+}
+
 // Mock Data
 const boardings = [
   {
@@ -65,28 +101,46 @@ const boardings = [
 ];
 
 // API Routes
-app.get('/api/boardings', (req, res) => {
-  let filtered = boardings;
-  
-  // Basic filtering
+app.get('/api/boardings', async (req, res) => {
   const { maxPrice, maxDistance, girlsOnly } = req.query;
-  
-  if (maxPrice) {
-    filtered = filtered.filter(b => b.price <= parseInt(maxPrice));
+  if (db && db.Boarding) {
+    try {
+      const where = {};
+      if (maxPrice) where.price = { [db.Sequelize.Op.lte]: parseInt(maxPrice) };
+      if (maxDistance) where.distance = { [db.Sequelize.Op.lte]: parseFloat(maxDistance) };
+      if (girlsOnly === 'true') where.girlsOnly = true;
+
+      const rows = await db.Boarding.findAll({ where });
+      return res.json(rows);
+    } catch (err) {
+      console.error('DB query failed:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
   }
-  if (maxDistance) {
-    filtered = filtered.filter(b => b.distance <= parseFloat(maxDistance));
-  }
-  if (girlsOnly === 'true') {
-    filtered = filtered.filter(b => b.girlsOnly === true);
-  }
-  
+
+  // Fallback to in-memory filter
+  let filtered = boardings.slice();
+  if (maxPrice) filtered = filtered.filter(b => b.price <= parseInt(maxPrice));
+  if (maxDistance) filtered = filtered.filter(b => b.distance <= parseFloat(maxDistance));
+  if (girlsOnly === 'true') filtered = filtered.filter(b => b.girlsOnly === true);
   res.json(filtered);
 });
 
-app.post('/api/bookings', (req, res) => {
-  const { boardingId, studentName, date } = req.body;
-  // Mock booking logic
+app.post('/api/bookings', async (req, res) => {
+  const { boardingId, studentName, date, userEmail } = req.body;
+  if (db && db.Booking) {
+    try {
+      let user = null;
+      if (userEmail) user = await db.User.findOne({ where: { email: userEmail } });
+      const booking = await db.Booking.create({ boardingId, userId: user ? user.id : null, studentName, date });
+      return res.json({ success: true, booking });
+    } catch (err) {
+      console.error('Failed to create booking:', err);
+      return res.status(500).json({ success: false, message: 'Failed to create booking' });
+    }
+  }
+
+  // Fallback
   res.json({ success: true, message: `Booking request sent to boarding ${boardingId} for ${studentName}` });
 });
 
@@ -95,14 +149,25 @@ const users = [
   { email: "student@test.com", password: "password123", name: "Alex Student" }
 ];
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
+  if (db && db.User) {
+    try {
+      const user = await db.User.findOne({ where: { email, password } });
+      if (user) return res.json({ success: true, message: 'Login successful', user: { name: user.name, email: user.email } });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    } catch (err) {
+      console.error('Login error:', err);
+      return res.status(500).json({ success: false, message: 'Server error' });
+    }
+  }
+
+  // Fallback mock users
   const user = users.find(u => u.email === email && u.password === password);
-  
   if (user) {
-    res.json({ success: true, message: "Login successful", user: { name: user.name, email: user.email } });
+    res.json({ success: true, message: 'Login successful', user: { name: user.name, email: user.email } });
   } else {
-    res.status(401).json({ success: false, message: "Invalid email or password" });
+    res.status(401).json({ success: false, message: 'Invalid email or password' });
   }
 });
 
